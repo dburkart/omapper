@@ -28,14 +28,38 @@
  * @author Dana Burkart
  */
  
+define( 'DIR_DATASTORES', 'data_stores/' );
+ 
 require_once 'IDataStore.php';
  
 class OMapper {
 
 	private $dataStore;
+	private $objDir;
 
-	public function __construct( IDataStore $dataStore ) {
-		$this->dataStore = $dataStore;
+	public function __construct( $dataStore, $objDir ) {
+		if ( is_object( $dataStore ) ) {
+			$this->dataStore = $dataStore;
+		} else {
+			require_once DIR_DATASTORES . $dataStore . '.php';
+			$this->dataStore = new $dataStore();
+		}
+		
+		$this->objDir = $objDir;
+	}
+	
+	/**
+	 * If the object already exists in the data store, load it, otherwise create
+	 * it.
+	 */
+	public function restore( &$obj ) {
+		if ( !$this->peek( $obj ) ) {
+			$this->create( $obj );
+		} else {
+			$this->load( $obj );
+		}
+		
+		return $obj;
 	}
 	
 	/**
@@ -43,9 +67,11 @@ class OMapper {
 	 *
 	 * @param obj the object to store
 	 */
-	public function create( object $obj ) {
+	public function create( &$obj ) {
 		list( $name, $fields ) = $this->convert( $obj );
 		$this->dataStore->create( $name, $fields );
+		
+		return $obj;
 	}
 	
 	/**
@@ -53,7 +79,7 @@ class OMapper {
 	 *
 	 * @param obj the object to save
 	 */
-	public function save( object $obj ) {
+	public function save( $obj ) {
 		list( $name, $fields ) = $this->convert( $obj );
 		$this->dataStore->save( $name, $fields );
 	}
@@ -64,9 +90,11 @@ class OMapper {
 	 * @param obj the object to load into
 	 * @return the object passed in
 	 */
-	public function load( object &$obj ) {
+	public function load( &$obj ) {
 		list( $name, $fields ) = $this->convert( $obj );
-		$this->dataStore->load( $name, $fields );
+		$obj = $this->convert( $this->dataStore->load( $name, $fields ) );
+		
+		return $obj;
 	}
 	
 	/**
@@ -74,7 +102,7 @@ class OMapper {
 	 *
 	 * @param obj the object to delete
 	 */
-	public function delete( object &$obj ) {
+	public function delete( &$obj ) {
 		list( $name, $fields ) = $this->convert( $obj );
 		$this->dataStore->delete( $name, $fields );
 	}
@@ -85,7 +113,7 @@ class OMapper {
 	 * @param obj the object to check
 	 * @return true if the object exists in the data store, false otherwise.
 	 */
-	public function peek( object $obj ) {
+	public function peek( $obj ) {
 		list( $name, $fields ) = $this->convert( $obj );
 		
 		if ( isset( $fields['id'] ) ) {
@@ -103,10 +131,40 @@ class OMapper {
 	 * @param obj the object to convert
 	 * @return a tuple containing the name of the structure and an array
 	 */
-	private function convert( object $obj ) {
-		// TODO: Use PHP's ReflectionClass to inspect $obj and turn it into an
-		//		 array of fields.
+	private function convert( $a ) {
+		if ( is_array( $a ) ) {
+			return $this->convertToObject( $a );
+		} else if ( is_object( $a ) ) {
+			return $this->convertToArray( $a );
+		} else {
+			return false;
+		}
+	}
+	
+	private function convertToObject( $arr ) {
+		list( $name, $fields ) = $arr;
 		
-		return array( '', array() );
+		require_once $this->objDir . $name . '.php';
+		
+		$obj = new $name();
+		
+		foreach( $fields as $key => $val ) {
+			$obj->$key = $val;
+		}
+		
+		return $obj;
+	}
+	
+	private function convertToArray( $obj ) {
+		$fields = array();
+	
+		$reflect = new ReflectionClass( $obj );
+		$props = $reflect->getProperties( ReflectionProperty::IS_PUBLIC );
+		
+		foreach ( $props as $prop ) {
+			$fields[ $prop->name ] = $prop->getValue($obj);
+		}
+		
+		return array( $reflect->getName(), $fields );
 	}
 }
