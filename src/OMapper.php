@@ -44,7 +44,8 @@ class OMapper {
 	 * @param obj the object to store
 	 */
 	public function create( object $obj ) {
-	
+		list( $name, $fields ) = $this->convert( $obj );
+		$this->dataStore->create( $name, $fields );
 	}
 	
 	/**
@@ -53,7 +54,8 @@ class OMapper {
 	 * @param obj the object to save
 	 */
 	public function save( object $obj ) {
-	
+		list( $name, $fields ) = $this->convert( $obj );
+		$this->dataStore->save( $name, $fields );
 	}
 	
 	/**
@@ -63,7 +65,8 @@ class OMapper {
 	 * @return the object passed in
 	 */
 	public function load( object &$obj ) {
-	
+		list( $name, $fields ) = $this->convert( $obj );
+		$this->dataStore->load( $name, $fields );
 	}
 	
 	/**
@@ -72,7 +75,22 @@ class OMapper {
 	 * @param obj the object delete
 	 */
 	public function delete( object &$obj ) {
-	
+		list( $name, $fields ) = $this->convert( $obj );
+		$this->dataStore->delete( $name, $fields );
 	}
 
+	//---- Private functions -------------------------------------------------//
+	
+	/**
+	 * Convert an object to an tuple in the format expected by an IDataStore.
+	 *
+	 * @param obj the object to convert
+	 * @return a tuple containing the name of the structure and an array
+	 */
+	private function convert( object $obj ) {
+		// TODO: Use PHP's ReflectionClass to inspect $obj and turn it into an
+		//		 array of fields.
+		
+		return array( '', array() );
+	}
 }

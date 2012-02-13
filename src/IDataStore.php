@@ -64,5 +64,14 @@ interface IDataStore {
 	 * @param fields the fields to match
 	 */
 	public function delete( string $name, array $fields );
+	
+	/**
+	 * Check whether the specified record exists in this data store.
+	 *
+	 * @param name the name of the storage structure
+	 * @param id the id of the record in question
+	 * @return true if the record exists, false otherwise
+	 */
+	public function peek( string $name, $id );
 
 }
