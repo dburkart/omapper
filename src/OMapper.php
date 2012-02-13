@@ -72,11 +72,27 @@ class OMapper {
 	/**
 	 * Delete an object from the data store. Sets the object to NULL.
 	 *
-	 * @param obj the object delete
+	 * @param obj the object to delete
 	 */
 	public function delete( object &$obj ) {
 		list( $name, $fields ) = $this->convert( $obj );
 		$this->dataStore->delete( $name, $fields );
+	}
+	
+	/**
+	 * Check whether or not an object exists in the data store.
+	 *
+	 * @param obj the object to check
+	 * @return true if the object exists in the data store, false otherwise.
+	 */
+	public function peek( object $obj ) {
+		list( $name, $fields ) = $this->convert( $obj );
+		
+		if ( isset( $fields['id'] ) ) {
+			return $this->dataStore->peek( $name, $fields['id'] );
+		}
+		
+		return false;
 	}
 
 	//---- Private functions -------------------------------------------------//
