@@ -37,5 +37,42 @@ class OMapper {
 	public function __construct( IDataStore $dataStore ) {
 		$this->dataStore = $dataStore;
 	}
+	
+	/**
+	 * Creates a new object using the data store.
+	 *
+	 * @param obj the object to store
+	 */
+	public function create( object $obj ) {
+	
+	}
+	
+	/**
+	 * Saves an object to the data store.
+	 *
+	 * @param obj the object to save
+	 */
+	public function save( object $obj ) {
+	
+	}
+	
+	/**
+	 * Loads an object from the data store. Modifies and returns the object.
+	 *
+	 * @param obj the object to load into
+	 * @return the object passed in
+	 */
+	public function load( object &$obj ) {
+	
+	}
+	
+	/**
+	 * Delete an object from the data store. Sets the object to NULL.
+	 *
+	 * @param obj the object delete
+	 */
+	public function delete( object &$obj ) {
+	
+	}
 
 }

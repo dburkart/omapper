@@ -39,12 +39,22 @@ interface IDataStore {
 	public function create( string $name, array $fields );
 	
 	/**
-	 * Update a record. An 'id' field should index the entry to be deleted.
+	 * Save a record. An 'id' field should index the entry to be deleted.
 	 *
-	 * @param name the name of the structure to update
-	 * @param fields containing new values
+	 * @param name the name of the structure to save to
+	 * @param fields an array containing new values for some (or all) fields
 	 */
-	public function update( string $name, array $fields );
+	public function save( string $name, array $fields );
+	
+	/**
+	 * Load a record. An 'id' field should index the entry to be loaded. Altern-
+	 * itively, if no 'id' field is supplied, an array of records will be loaded
+	 * that matches any filled in fields.
+	 *
+	 * @param name the name of the structure to load from
+	 * @param fields an array containing fields to be loaded
+	 */
+	public function load( string $name, array $fields );
 	
 	/**
 	 * Delete record(s). It is expected that all entries with matching fields
