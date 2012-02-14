@@ -52,6 +52,8 @@ class Session implements IDataStore {
 		}
 		
 		$_SESSION[ $name . ':' . $fields['id'] ] = $fields;
+		
+		return array( $name, $_SESSION[ $name . ':' . $fields['id'] ] );
 	}
 	
 	/**
@@ -80,6 +82,8 @@ class Session implements IDataStore {
 	public function load( $name, $fields ) {
 		if ( isset( $fields['id'] ) ) {
 			return array( $name, $_SESSION[ $name . ':' . $fields['id'] ] );
+		} else {
+			
 		}
 	}
 	

@@ -54,9 +54,9 @@ class OMapper {
 	 */
 	public function restore( &$obj ) {
 		if ( !$this->peek( $obj ) ) {
-			$this->create( $obj );
+			$obj = $this->create( $obj );
 		} else {
-			$this->load( $obj );
+			$obj = $this->load( $obj );
 		}
 		
 		return $obj;
@@ -69,7 +69,7 @@ class OMapper {
 	 */
 	public function create( &$obj ) {
 		list( $name, $fields ) = $this->convert( $obj );
-		$this->dataStore->create( $name, $fields );
+		$obj = $this->convert( $this->dataStore->create( $name, $fields ) );
 		
 		return $obj;
 	}
@@ -79,9 +79,11 @@ class OMapper {
 	 *
 	 * @param obj the object to save
 	 */
-	public function save( $obj ) {
+	public function save( &$obj ) {
 		list( $name, $fields ) = $this->convert( $obj );
-		$this->dataStore->save( $name, $fields );
+		$obj = $this->convert( $this->dataStore->save( $name, $fields ) );
+		
+		return $obj;
 	}
 	
 	/**
@@ -91,7 +93,7 @@ class OMapper {
 	 * @return the object passed in
 	 */
 	public function load( &$obj ) {
-		list( $name, $fields ) = $this->convert( $obj );
+		list( $name, $fields ) = $this->convert( $obj, false );
 		$obj = $this->convert( $this->dataStore->load( $name, $fields ) );
 		
 		return $obj;
@@ -114,7 +116,7 @@ class OMapper {
 	 * @return true if the object exists in the data store, false otherwise.
 	 */
 	public function peek( $obj ) {
-		list( $name, $fields ) = $this->convert( $obj );
+		list( $name, $fields ) = $this->convert( $obj, false );
 		
 		if ( isset( $fields['id'] ) ) {
 			return $this->dataStore->peek( $name, $fields['id'] );
@@ -131,17 +133,17 @@ class OMapper {
 	 * @param obj the object to convert
 	 * @return a tuple containing the name of the structure and an array
 	 */
-	private function convert( $a ) {
+	private function convert( $a, $recurse=true ) {
 		if ( is_array( $a ) ) {
-			return $this->convertToObject( $a );
+			return $this->convertToObject( $a, $recurse );
 		} else if ( is_object( $a ) ) {
-			return $this->convertToArray( $a );
+			return $this->convertToArray( $a, $recurse );
 		} else {
 			return false;
 		}
 	}
 	
-	private function convertToObject( $arr ) {
+	private function convertToObject( $arr, $recurse ) {
 		list( $name, $fields ) = $arr;
 		
 		require_once $this->objDir . $name . '.php';
@@ -149,20 +151,57 @@ class OMapper {
 		$obj = new $name();
 		
 		foreach( $fields as $key => $val ) {
-			$obj->$key = $val;
+			if ( $key[0] == '_' ) {
+				if ( $recurse ) {
+					$trace = debug_backtrace();
+					$func = $trace[ count( $trace ) - 1 ]['function'];
+					$name = substr( $key, 1 );
+					
+					require_once $this->objDir.$name.'.php';
+					$o = new $name();
+					$o->id = $val;
+					
+					$o = $this->$func( $o );
+					$obj->$key = $o;
+				}
+			} else {
+				$obj->$key = $val;
+			}
 		}
 		
 		return $obj;
 	}
 	
-	private function convertToArray( $obj ) {
+	private function convertToArray( $obj, $recurse ) {
 		$fields = array();
 	
 		$reflect = new ReflectionClass( $obj );
 		$props = $reflect->getProperties( ReflectionProperty::IS_PUBLIC );
 		
 		foreach ( $props as $prop ) {
-			$fields[ $prop->name ] = $prop->getValue($obj);
+			if ( $prop->name[0] == '_' ) {
+				if ( $recurse ) {
+					$fields[ $prop->name ] = $prop->getValue($obj)->id;
+					
+					$trace = debug_backtrace();
+					$func = $trace[ count( $trace ) - 1 ]['function'];
+					$name = substr( $prop->name, 1 );
+					
+					if ( $func == 'save' ) {
+						$this->$func( $prop->getValue( $obj ) );
+					} else if ( $func == 'create' || $func == 'load' ||
+								$func == 'restore' ) {
+						require_once $this->objDir.$name.'.php';
+						$o = new $name();
+						$o->id = $fields[ $prop->name ];
+					
+						$o = $this->$func( $o );
+						$fields[ $prop->name ] = $o->id;			
+					}
+				}
+			} else {
+				$fields[ $prop->name ] = $prop->getValue($obj);
+			}
 		}
 		
 		return array( $reflect->getName(), $fields );
