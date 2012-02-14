@@ -106,7 +106,9 @@ class OMapper {
 	 */
 	public function delete( &$obj ) {
 		list( $name, $fields ) = $this->convert( $obj );
-		$this->dataStore->delete( $name, $fields );
+		$obj = $this->convert( $this->dataStore->delete( $name, $fields ) );
+		
+		return $obj;
 	}
 	
 	/**
@@ -128,10 +130,12 @@ class OMapper {
 	//---- Private functions -------------------------------------------------//
 	
 	/**
-	 * Convert an object to an tuple in the format expected by an IDataStore.
+	 * Converts between tuples and objects.
 	 *
-	 * @param obj the object to convert
-	 * @return a tuple containing the name of the structure and an array
+	 * @param a the tuple or object to convert
+	 * @param recurse whether or not to recurse
+	 * @return false if a is not a tuple or object, the converted entity 
+	 *		otherwise
 	 */
 	private function convert( $a, $recurse=true ) {
 		if ( is_array( $a ) ) {
@@ -143,6 +147,12 @@ class OMapper {
 		}
 	}
 	
+	/**
+	 * Convert a tuple to an object.
+	 *
+	 * @param arr the tuple to convert
+	 * @param whether or not to recurse
+	 */
 	private function convertToObject( $arr, $recurse ) {
 		list( $name, $fields ) = $arr;
 		
@@ -153,15 +163,22 @@ class OMapper {
 		foreach( $fields as $key => $val ) {
 			if ( $key[0] == '_' ) {
 				if ( $recurse ) {
+					// Get a debug trace to figure out what to recurse into
 					$trace = debug_backtrace();
 					$func = $trace[ count( $trace ) - 1 ]['function'];
+					
+					// Get rid of object notation (underscore)
 					$name = substr( $key, 1 );
 					
+					// Load up a new instance of the specified object
 					require_once $this->objDir.$name.'.php';
 					$o = new $name();
-					$o->id = $val;
 					
+					// Set the id and recurse
+					$o->id = $val;
 					$o = $this->$func( $o );
+					
+					// Add the sub-object back in
 					$obj->$key = $o;
 				}
 			} else {
@@ -172,6 +189,13 @@ class OMapper {
 		return $obj;
 	}
 	
+	/**
+	 * Convert an object to an tuple in the format expected by an IDataStore.
+	 *
+	 * @param obj the object to convert
+	 * @param recurse whether or not to recurse
+	 * @return a tuple containing the name of the structure and an array
+	 */
 	private function convertToArray( $obj, $recurse ) {
 		$fields = array();
 	
@@ -183,20 +207,33 @@ class OMapper {
 				if ( $recurse ) {
 					$fields[ $prop->name ] = $prop->getValue($obj)->id;
 					
+					// Get a debug trace to figure out _what_ to recurse into
 					$trace = debug_backtrace();
 					$func = $trace[ count( $trace ) - 1 ]['function'];
+					
+					// Get rid of the object notation (underscore)
 					$name = substr( $prop->name, 1 );
 					
-					if ( $func == 'save' ) {
+					// Don't blow away the object if we're saving
+					if ( $func == 'save' || $func == 'delete' ) {
 						$this->$func( $prop->getValue( $obj ) );
-					} else if ( $func == 'create' || $func == 'load' ||
-								$func == 'restore' ) {
+					} 
+					// Create a new object
+					else if ( empty( $fields[ $prop->name ] ) && 
+							( $func == 'create' || $func == 'restore' ) ) {
+							
+						// Find the object, and make a new instance
 						require_once $this->objDir.$name.'.php';
 						$o = new $name();
+						
+						// Set the id (should be empty)
 						$o->id = $fields[ $prop->name ];
 					
+						// Recurse on the sub-object
 						$o = $this->$func( $o );
-						$fields[ $prop->name ] = $o->id;			
+						
+						// Set the object id to the new id
+						$fields[ $prop->name ] = $o->id;
 					}
 				}
 			} else {
