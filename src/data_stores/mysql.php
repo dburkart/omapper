@@ -37,8 +37,8 @@ class mysql implements IDataStore {
 		$values[ strrpos( $values, ',' )] = ')';
 	
 		$query = "INSERT INTO $name $keys VALUES $values";
+		$result = mysql_query( $query );
 		
-		echo "$query\n";
 		return array( $name, $fields );
 	}
 	
@@ -64,8 +64,8 @@ class mysql implements IDataStore {
 		if ( empty( $columns ) ) return array( $name, $fields );
 		
 		$query = "UPDATE $name SET $columns WHERE $name.id={$fields[id]} LIMIT 1";
+		$result = mysql_query( $query );
 		
-		echo "$query\n";
 		return array( $name, $fields );
 	}
 	
@@ -110,6 +110,9 @@ class mysql implements IDataStore {
 	 */
 	public function peek( $name, $id ) {
 		$query = "SELECT id FROM $name WHERE $name.id=$id";
+		
+		$result = mysql_query( $query );
+		return mysql_count_rows( $result );
 	}
 
 }
