@@ -39,7 +39,7 @@ interface IDataStore {
 	public function create( $name, $fields );
 	
 	/**
-	 * Save a record. An 'id' field should index the entry to be deleted.
+	 * Save a record. An 'id' field should index the entry to be saved.
 	 *
 	 * @param name the name of the structure to save to
 	 * @param fields an array containing new values for some (or all) fields

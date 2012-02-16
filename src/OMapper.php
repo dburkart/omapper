@@ -168,11 +168,11 @@ class OMapper {
 					$func = $trace[ count( $trace ) - 1 ]['function'];
 					
 					// Get rid of object notation (underscore)
-					$name = substr( $key, 1 );
+					$subName = substr( $key, 1 );
 					
 					// Load up a new instance of the specified object
-					require_once $this->objDir.$name.'.php';
-					$o = new $name();
+					require_once $this->objDir.$subName.'.php';
+					$o = new $subName();
 					
 					// Set the id and recurse
 					$o->id = $val;
@@ -205,7 +205,8 @@ class OMapper {
 		foreach ( $props as $prop ) {
 			if ( $prop->name[0] == '_' ) {
 				if ( $recurse ) {
-					$fields[ $prop->name ] = $prop->getValue($obj)->id;
+					$subObj = $prop->getValue($obj);
+					$fields[ $prop->name ] = $subObj->id;
 					
 					// Get a debug trace to figure out _what_ to recurse into
 					$trace = debug_backtrace();

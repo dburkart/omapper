@@ -5,11 +5,11 @@ require_once 'IDataStore.php';
 class mysql implements IDataStore {
 
 	public function __construct() {
-		$user = "qjdevuser";
-		$pw = "JmCQV9MqZQ27dK8L";
+		$user = "test";
+		$pw = "test";
 		$host = "localhost";
 		
-		$thedb="quojax";
+		$thedb="testdb";
 
 		$db = mysql_connect($host,$user,$pw);
 		mysql_select_db($thedb,$db);
