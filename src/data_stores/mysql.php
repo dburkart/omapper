@@ -1,5 +1,25 @@
 <?php
-
+/*
+ *      mysql.php
+ *      
+ *      Copyright 2012 Dana Burkart <danaburkart@gmail.com>
+ *      
+ *      This program is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published by
+ *      the Free Software Foundation; either version 2 of the License, or
+ *      (at your option) any later version.
+ *      
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ *      
+ *      You should have received a copy of the GNU General Public License
+ *      along with this program; if not, write to the Free Software
+ *      Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *      MA 02110-1301, USA.
+ */
+ 
 require_once 'IDataStore.php';
 
 class mysql implements IDataStore {
@@ -25,21 +45,24 @@ class mysql implements IDataStore {
 	public function create( $name, $fields ) {
 		$keys = '(';
 		$values = '(';
+		$origName = $name;
+		$name = strtolower( $name );
 		
 		foreach ( $fields as $key => $value ) {
 			if ( $key == 'id' ) continue;
 			
 			$keys 		.= "$key,";
-			$values 	.= "$value,";
+			$values 	.= "'$value',";
 		}
 		
 		$keys[ strrpos( $keys, ',' )] = ')';
 		$values[ strrpos( $values, ',' )] = ')';
 	
-		$query = "INSERT INTO $name $keys VALUES $values";
+		$query = mysql_real_escape_string("INSERT INTO $name $keys VALUES $values");
 		$result = mysql_query( $query );
+		$fields[ 'id' ] = mysql_insert_id( $result );
 		
-		return array( $name, $fields );
+		return array( $origName, $fields );
 	}
 	
 	/**
@@ -50,6 +73,8 @@ class mysql implements IDataStore {
 	 */
 	public function save( $name, $fields ) {
 		$columns = ' ';
+		$origName = $name;
+		$name = strtolower( $name );
 		
 		foreach ( $fields as $key => $value ) {
 			if ( $key == 'id' ) continue;
@@ -63,10 +88,10 @@ class mysql implements IDataStore {
 		
 		if ( empty( $columns ) ) return array( $name, $fields );
 		
-		$query = "UPDATE $name SET $columns WHERE $name.id={$fields[id]} LIMIT 1";
+		$query = mysql_real_escape_string("UPDATE $name SET $columns WHERE $name.id={$fields[id]} LIMIT 1");
 		$result = mysql_query( $query );
 		
-		return array( $name, $fields );
+		return array( $origName, $fields );
 	}
 	
 	/**
@@ -78,15 +103,37 @@ class mysql implements IDataStore {
 	 * @param fields an array containing fields to be loaded
 	 */
 	public function load( $name, $fields ) {
+		$origName = $name;
+		$name = strtolower( $name );
+	
 		if ( !empty( $fields[ 'id' ] ) ) {
-			$query = "SELECT * FROM $name WHERE $name.id={$fields[id]} LIMIT 1";
+			$query = mysql_real_escape_string("SELECT * FROM $name WHERE $name.id={$fields[id]} LIMIT 1");
 			
 			$result = mysql_query( $query );
+			if ( mysql_numrows( $result ) <= 0 ) return false;
+			
 			$fields = mysql_fetch_assoc( $result );
 			
-			return array( $name, $fields );
+			return array( $origName, $fields );
 		} else {
-		
+			$sel = '';
+			
+			foreach ( $fields as $key => $value ) {
+				if ( empty( $value ) ) continue;
+				
+				$sel .= " $name.$key='$value' AND";
+			}
+			
+			$sel = substr( $sel, 0, -4 );
+			
+			$query = mysql_real_escape_string("SELECT * FROM $name WHERE$sel");
+			$result = mysql_query( $query );
+			
+			if ( mysql_numrows( $result ) <= 0 ) return false;
+			
+			$fields = mysql_fetch_assoc( $result );
+			
+			return array( $origName, $fields );
 		}
 	}
 	
@@ -98,6 +145,8 @@ class mysql implements IDataStore {
 	 * @param fields the fields to match
 	 */
 	public function delete( $name, $fields ) {
+		$origName = $name;
+		$name = strtolower( $name );
 	
 	}
 	
@@ -109,7 +158,9 @@ class mysql implements IDataStore {
 	 * @return true if the record exists, false otherwise
 	 */
 	public function peek( $name, $id ) {
-		$query = "SELECT id FROM $name WHERE $name.id=$id";
+		$name = strtolower( $name );
+		
+		$query = mysql_real_escape_string("SELECT id FROM $name WHERE $name.id=$id");
 		
 		$result = mysql_query( $query );
 		return mysql_count_rows( $result );

@@ -94,9 +94,15 @@ class OMapper {
 	 */
 	public function load( &$obj ) {
 		list( $name, $fields ) = $this->convert( $obj, false );
-		$obj = $this->convert( $this->dataStore->load( $name, $fields ) );
 		
-		return $obj;
+		$ld = $this->dataStore->load( $name, $fields );
+		
+		if ( $ld ) {
+			$obj = $this->convert( $ld );
+			return $obj;
+		} else {
+			return $ld;
+		}
 	}
 	
 	/**
