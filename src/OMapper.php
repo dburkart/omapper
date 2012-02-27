@@ -231,9 +231,7 @@ class OMapper {
 					$subObj = $prop->getValue($obj);
 					$fields[ $prop->name ] = $subObj->id;
 					
-					// Get a debug trace to figure out _what_ to recurse into
-					$trace = debug_backtrace();
-					//$func = $trace[ count( $trace ) - 1 ]['function'];
+					// The name of the function to call is in $recurse
 					$func = $recurse;
 					
 					// Get rid of the object notation (underscore)
