@@ -80,7 +80,7 @@ class OMapper {
 	 * @param obj the object to save
 	 */
 	public function save( &$obj ) {
-		list( $name, $fields ) = $this->convert( $obj );
+		list( $name, $fields ) = $this->convert( $obj, 'save' );
 		$obj = $this->convert( $this->dataStore->save( $name, $fields ) );
 		
 		return $obj;
@@ -97,7 +97,7 @@ class OMapper {
 		$reflect = new ReflectionClass( $obj );
 		if ( $reflect->hasMethod( "__hook_load" ) ) $callhook = true;
 	
-		list( $name, $fields ) = $this->convert( $obj, false );
+		list( $name, $fields ) = $this->convert( $obj );
 		
 		$ld = $this->dataStore->load( $name, $fields );
 		
@@ -106,7 +106,7 @@ class OMapper {
 				$range = array();
 				
 				foreach ( $ld[1] as $o ) {
-					$o = $this->convert( array( $ld[0], $o ) );
+					$o = $this->convert( array( $ld[0], $o ), 'load' );
 					if ( $callhook ) $o->__hook_load( $this );
 					$range[] = $o;
 				}
@@ -114,7 +114,7 @@ class OMapper {
 				$obj = $range;
 				return $range;
 			} else {
-				$obj = $this->convert( $ld );
+				$obj = $this->convert( $ld, 'load' );
 				if ( $callhook ) $obj->__hook_load( $this );
 				return $obj;
 			}
@@ -130,7 +130,7 @@ class OMapper {
 	 */
 	public function delete( &$obj ) {
 		list( $name, $fields ) = $this->convert( $obj );
-		$obj = $this->convert( $this->dataStore->delete( $name, $fields ) );
+		$obj = $this->convert( $this->dataStore->delete( $name, $fields ), 'delete' );
 		
 		return $obj;
 	}
@@ -142,7 +142,7 @@ class OMapper {
 	 * @return true if the object exists in the data store, false otherwise.
 	 */
 	public function peek( $obj ) {
-		list( $name, $fields ) = $this->convert( $obj, false );
+		list( $name, $fields ) = $this->convert( $obj );
 		
 		if ( isset( $fields['id'] ) ) {
 			return $this->dataStore->peek( $name, $fields['id'] );
@@ -167,7 +167,7 @@ class OMapper {
 	 * @return false if a is not a tuple or object, the converted entity 
 	 *		otherwise
 	 */
-	private function convert( $a, $recurse=true ) {
+	private function convert( $a, $recurse=false ) {
 		if ( is_array( $a ) ) {
 			return $this->convertToObject( $a, $recurse );
 		} else if ( is_object( $a ) ) {
@@ -193,9 +193,8 @@ class OMapper {
 		foreach( $fields as $key => $val ) {
 			if ( $key[0] == '_' ) {
 				if ( $recurse ) {
-					// Get a debug trace to figure out what to recurse into
-					$trace = debug_backtrace();
-					$func = $trace[ count( $trace ) - 1 ]['function'];
+					// The function name is stored in $recurse
+					$func = $recurse;
 					
 					// Get rid of object notation (underscore)
 					$subName = substr( $key, 1 );
@@ -238,9 +237,8 @@ class OMapper {
 					$subObj = $prop->getValue($obj);
 					$fields[ $prop->name ] = $subObj->id;
 					
-					// Get a debug trace to figure out _what_ to recurse into
-					$trace = debug_backtrace();
-					$func = $trace[ count( $trace ) - 1 ]['function'];
+					// The name of the function to call is in $recurse
+					$func = $recurse;
 					
 					// Get rid of the object notation (underscore)
 					$name = substr( $prop->name, 1 );
