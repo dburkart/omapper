@@ -150,6 +150,12 @@ class OMapper {
 		
 		return false;
 	}
+	
+	//---- Protected functions -----------------------------------------------//
+	
+	protected function require_file( $file ) {
+		require_once $this->objDir.$file.'.php';
+	}
 
 	//---- Private functions -------------------------------------------------//
 	
@@ -195,7 +201,7 @@ class OMapper {
 					$subName = substr( $key, 1 );
 					
 					// Load up a new instance of the specified object
-					require_once $this->objDir.$subName.'.php';
+					$this->require_file( $subName );
 					$o = new $subName();
 					
 					// Set the id and recurse
@@ -248,7 +254,8 @@ class OMapper {
 							( $func == 'create' || $func == 'restore' ) ) {
 							
 						// Find the object, and make a new instance
-						require_once $this->objDir.$name.'.php';
+						//require_once $this->objDir.$name.'.php';
+						$this->require_file( $name );
 						$o = new $name();
 						
 						// Set the id (should be empty)
