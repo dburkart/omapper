@@ -120,18 +120,22 @@ class mysql implements IDataStore {
 			
 			foreach ( $fields as $key => $value ) {
 				if ( empty( $value ) ) continue;
+				$value = mysql_real_escape_string( $value );
 				
 				$sel .= " $name.$key='$value' AND";
 			}
 			
 			$sel = substr( $sel, 0, -4 );
 			
-			$query = mysql_real_escape_string("SELECT * FROM $name WHERE$sel");
+			$query = "SELECT * FROM $name WHERE$sel";
 			$result = mysql_query( $query );
 			
 			if ( mysql_numrows( $result ) <= 0 ) return false;
 			
-			$fields = mysql_fetch_assoc( $result );
+			unset( $fields );
+			while ( $row = mysql_fetch_assoc( $result ) ) {
+				$fields[] = $row;
+			}
 			
 			return array( $origName, $fields );
 		}

@@ -93,13 +93,31 @@ class OMapper {
 	 * @return the object passed in
 	 */
 	public function load( &$obj ) {
+		$callhook = false;
+		$reflect = new ReflectionClass( $obj );
+		if ( $reflect->hasMethod( "__hook_load" ) ) $callhook = true;
+	
 		list( $name, $fields ) = $this->convert( $obj, false );
 		
 		$ld = $this->dataStore->load( $name, $fields );
 		
 		if ( $ld ) {
-			$obj = $this->convert( $ld );
-			return $obj;
+			if ( is_array( $ld[1][0] ) ) {
+				$range = array();
+				
+				foreach ( $ld[1] as $o ) {
+					$o = $this->convert( array( $ld[0], $o ) );
+					if ( $callhook ) $o->__hook_load( $this );
+					$range[] = $o;
+				}
+				
+				$obj = $range;
+				return $range;
+			} else {
+				$obj = $this->convert( $ld );
+				if ( $callhook ) $obj->__hook_load( $this );
+				return $obj;
+			}
 		} else {
 			return $ld;
 		}
